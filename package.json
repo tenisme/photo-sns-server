@@ -18,21 +18,8 @@
   },
   "homepage": "https://github.com/tenisme/my-contact-server#readme",
   "dependencies": {
-    "bcrypt": "^5.0.0",
-    "bcryptjs": "^2.4.3",
-    "chalk": "^4.1.0",
-    "crypto-js": "^4.0.0",
     "dotenv": "^8.2.0",
-    "express": "^4.17.1",
-    "express-fileupload": "^1.1.9",
-    "jsonwebtoken": "^8.5.1",
-    "moment": "^2.27.0",
-    "morgan": "^1.10.0",
-    "mysql2": "^2.1.0",
-    "nodemailer": "^6.4.11",
-    "path": "^0.12.7",
-    "postman-request": "^2.88.1-postman.23",
-    "validator": "^13.1.1"
+    "express": "^4.17.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.4"
