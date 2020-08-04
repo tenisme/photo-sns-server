@@ -99,9 +99,6 @@ exports.joinOnUser = async (req, res, next) => {
       res.status(500).json({ success: false, message: `토큰 저장 실패` });
       return;
     }
-
-    await conn.commit();
-    await conn.release();
   } catch (e) {
     await conn.rollback();
     res.status(500).json({ success: false, message: `DB ERROR 2`, error: e });
@@ -120,6 +117,9 @@ exports.joinOnUser = async (req, res, next) => {
     res.status(500).json({ success: false, message: "EMAIL ERROR", error: e });
     return;
   }
+
+  await conn.commit();
+  await conn.release();
 
   res
     .status(200)
