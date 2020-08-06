@@ -1,5 +1,4 @@
 const express = require(`express`);
-const auth = require(`../middleware/auth.js`);
 
 const {
   uploadPosting,
@@ -12,9 +11,9 @@ const router = express.Router();
 
 router
   .route(`/`)
-  .post(auth, uploadPosting)
-  .get(auth, getPostings)
-  .put(auth, updatePosting)
-  .delete(auth, deletePosting);
+  .post(uploadPosting)
+  .get(getPostings)
+  .put(updatePosting)
+  .delete(deletePosting);
 
 module.exports = router;

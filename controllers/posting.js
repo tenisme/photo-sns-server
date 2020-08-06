@@ -1,5 +1,7 @@
 const chalk = require(`chalk`);
 const path = require(`path`);
+const validator = require("validator");
+
 const connection = require("../db/mysql_connection");
 
 // @desc    포스팅 생성
@@ -14,6 +16,7 @@ exports.uploadPosting = async (req, res, next) => {
   let public_on = req.body.public_on;
   let comments = req.body.comments;
   let tags = req.body.tags;
+
   let query;
   let values;
   let tag_id_arr = [];
@@ -27,6 +30,12 @@ exports.uploadPosting = async (req, res, next) => {
   // 공개 여부 : default 0(전체 공개)
   if (!public_on) {
     public_on = 0;
+  } else if (!validator.isNumeric(String(public_on))) {
+    res.status(400).json({
+      success: false,
+      message: `포스팅 공개 설정은 숫자로 입력해야 함`,
+    });
+    return;
   }
 
   // 코멘트가 없는 경우 : default ""
@@ -137,6 +146,7 @@ exports.uploadPosting = async (req, res, next) => {
   // 파일을 지정한 경로에 저장
   photo.mv(fileUploadPath, async (err) => {
     if (err) {
+      await conn.rollback();
       res.status(500).json({ error: err });
       return;
     }
@@ -178,12 +188,23 @@ exports.uploadPosting = async (req, res, next) => {
       [result] = await conn.query(query, [values]);
 
       if (result.affectedRows == 0) {
+        await conn.rollback();
         res
           .status(500)
           .json({ success: false, message: `포스팅에 태그 추가 실패` });
         return;
       }
     } catch (e) {
+      if (e.errno == 1062) {
+        await conn.rollback();
+        res.status(400).json({
+          success: false,
+          message: `한 게시글에 동일한 태그를 두 개 이상 추가할 수 없음`,
+        });
+        return;
+      }
+
+      await conn.rollback();
       res.status(500).json({ success: false, message: `DB ERROR`, error: e });
       return;
     }
@@ -222,12 +243,22 @@ exports.getPostings = async (req, res, next) => {
     limit = 25;
   }
 
-  // 포스팅별 태그 빼내기
+  if (
+    !validator.isNumeric(String(offset)) ||
+    !validator.isNumeric(String(limit))
+  ) {
+    res.status(400).json({
+      success: false,
+      message: `offset 혹은 limit은 숫자로 입력해야 함`,
+    });
+    return;
+  }
+
+  // 포스팅 정보 빼내기
   let query = `select p.posting_id, p.public_on, p.photo_url, p.comments, p.created_at, t.tag_name
-  from posting as p join posting_tag as pt on p.posting_id = pt.posting_id 
-  left join tag as t on pt.tag_id = t.tag_id
-  where p.user_id = ? order by p.created_at desc`;
-  let values = [user_id, offset, limit];
+  from posting as p left join posting_tag as pt on p.posting_id = pt.posting_id 
+  left join tag as t on pt.tag_id = t.tag_id where p.user_id = ? order by p.created_at desc`;
+  let values = [user_id];
 
   try {
     [rows] = await connection.query(query, values);
@@ -243,6 +274,7 @@ exports.getPostings = async (req, res, next) => {
     return;
   }
 
+  // 포스팅별로 태그를 빼내서 각 포스팅에 다시 저장하기
   let items = [];
   let tag_arr = [];
 
@@ -250,7 +282,11 @@ exports.getPostings = async (req, res, next) => {
     // 반환된 결과는 다음번 콜백의 첫번째 파라메터로 다시 전달된다.
 
     if (index == 0) {
-      tag_arr.push(`#` + currentItem.tag_name);
+      if (!previousItem.tag_name) {
+        tag_arr.push(null);
+      } else {
+        tag_arr.push(`#` + currentItem.tag_name);
+      }
       return currentItem;
     }
 
@@ -260,7 +296,11 @@ exports.getPostings = async (req, res, next) => {
       tag_arr = [];
     }
 
-    tag_arr.push(`#` + currentItem.tag_name);
+    if (!currentItem.tag_name) {
+      tag_arr.push(null);
+    } else {
+      tag_arr.push(`#` + currentItem.tag_name);
+    }
 
     if (index == rows.length - 1) {
       currentItem.tag_name = tag_arr;
@@ -272,10 +312,6 @@ exports.getPostings = async (req, res, next) => {
   }, rows[0]);
 
   // console.log(items);
-  offset = Number(offset);
-  limit = Number(limit);
-
-  console.log(offset, limit);
 
   let slice_items = items.slice(offset, limit);
 
@@ -294,12 +330,19 @@ exports.updatePosting = async (req, res, next) => {
   let user_id = req.user.user_id;
   let posting_id = req.body.posting_id;
   let public_on = req.body.public_on;
-  const photo = req.files.photo;
   let comments = req.body.comments;
   let tags = req.body.tags;
+
   let query;
   let values;
   let tag_id_arr = [];
+
+  // req.files.photo가 없으면 photo를 null 처리
+  try {
+    const photo = req.files.photo;
+  } catch (e) {
+    const photo = null;
+  }
 
   // 유저 검증
   if (!user_id) {
@@ -307,9 +350,28 @@ exports.updatePosting = async (req, res, next) => {
     return;
   }
 
+  // posting_id가 있는지 혹은 숫자가 아닌지 체크
+  if (!posting_id) {
+    res
+      .status(400)
+      .json({ success: false, message: `수정할 포스팅 id 입력은 필수` });
+    return;
+  } else if (!validator.isNumeric(String(posting_id))) {
+    res
+      .status(400)
+      .json({ success: false, message: `포스팅 id는 숫자로 입력해야 함` });
+    return;
+  }
+
   // 공개 여부 : default 0(전체 공개)
   if (!public_on) {
     public_on = 0;
+  } else if (!validator.isNumeric(String(public_on))) {
+    res.status(400).json({
+      success: false,
+      message: `포스팅 공개 설정은 숫자로 입력해야 함`,
+    });
+    return;
   }
 
   // 코멘트가 없는 경우 : default ""
@@ -392,6 +454,8 @@ exports.updatePosting = async (req, res, next) => {
     query = `update posting set public_on = ?, comments = ? where posting_id = ? and user_id = ?`;
     values = [public_on, comments, posting_id, user_id];
   } else {
+    const photo = req.files.photo;
+
     // 이미지 파일을 첨부했는지 체크
     if (!photo.mimetype.startsWith(`image`)) {
       res.status(400).json({ success: false, message: `이미지 파일이 아님` });
@@ -466,12 +530,23 @@ exports.updatePosting = async (req, res, next) => {
       [result] = await conn.query(query, [values]);
 
       if (result.affectedRows == 0) {
+        await conn.rollback();
         res
           .status(500)
           .json({ success: false, message: `포스팅에 태그 추가 실패` });
         return;
       }
     } catch (e) {
+      if (e.errno == 1062) {
+        await conn.rollback();
+        res.status(400).json({
+          success: false,
+          message: `한 게시글에 동일한 태그를 두 개 이상 추가할 수 없음`,
+        });
+        return;
+      }
+
+      await conn.rollback();
       res.status(500).json({ success: false, message: `DB ERROR`, error: e });
       return;
     }
@@ -490,4 +565,77 @@ exports.updatePosting = async (req, res, next) => {
 // @res     success, message
 exports.deletePosting = async (req, res, next) => {
   console.log(chalk.bold("<<  포스팅 삭제 api 실행됨  >>"));
+
+  let user_id = req.user.user_id;
+  let posting_id = req.body.posting_id;
+
+  // 유저 검증
+  if (!user_id) {
+    res.status(401).json({ success: false, message: `잘못된 접근` });
+    return;
+  }
+
+  // posting_id가 있는지 혹은 숫자가 아닌지 체크
+  if (!posting_id) {
+    res
+      .status(400)
+      .json({ success: false, message: `수정할 포스팅 id 입력은 필수` });
+    return;
+  } else if (!validator.isNumeric(String(posting_id))) {
+    res
+      .status(400)
+      .json({ success: false, message: `포스팅 id는 숫자로 입력해야 함` });
+    return;
+  }
+
+  // 트랜잭션 설정/실행
+  const conn = await connection.getConnection();
+  await conn.beginTransaction();
+
+  // posting_tag 테이블에서 데이터 삭제
+  let query = `delete from posting_tag where posting_id = ?`;
+  let values = [posting_id];
+
+  try {
+    [result] = await conn.query(query, values);
+
+    if (result.affectedRows == 0) {
+      await conn.rollback();
+      res
+        .status(500)
+        .json({ success: false, message: `포스팅 id가 존재하지 않음` });
+      return;
+    }
+  } catch (e) {
+    await conn.rollback();
+    res.status(500).json({ success: false, message: `DB ERROR`, error: e });
+    return;
+  }
+
+  // posting 테이블에서 데이터 삭제
+  query = `delete from posting where user_id = ? and posting_id = ?`;
+  values = [user_id, posting_id];
+
+  try {
+    [result] = await conn.query(query, values);
+
+    if (result.affectedRows == 0) {
+      await conn.rollback();
+      res
+        .status(400)
+        .json({ success: false, message: `잘못된 user_id 혹은 posting_id` });
+      return;
+    }
+  } catch (e) {
+    await conn.rollback();
+    res.status(500).json({ success: false, message: `DB ERROR`, error: e });
+    return;
+  }
+
+  await conn.commit();
+  await conn.release();
+
+  res.status(200).json({ success: true, message: `포스팅 삭제 성공` });
 };
+
+// followee의 포스팅 조회 - 최신 글부터 25개

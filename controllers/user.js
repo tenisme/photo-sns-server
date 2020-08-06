@@ -229,6 +229,8 @@ exports.login = async (req, res, next) => {
   }
 };
 
+// 내 정보 조회 api
+
 // @desc    현재 기기 로그아웃 api
 // @route   DELETE /api/v1/photo_sns/user
 // @req     user_id(auth), token(auth)
@@ -260,3 +262,9 @@ exports.logout = async (req, res, next) => {
     res.status(500).json({ success: false, message: `DB ERROR`, error: e });
   }
 };
+
+// 모든 기기에서 로그아웃 api
+// 회원 탈퇴 api
+// 패스워드 변경 api
+// 패스워드 분실/리셋 요청 api
+// 패스워드 초기화 api
