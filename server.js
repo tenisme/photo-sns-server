@@ -11,7 +11,6 @@ const user = require(`./routes/user.js`);
 const posting = require(`./routes/posting.js`);
 
 // middleware 파일
-const auth = require(`./middleware/auth.js`);
 
 const app = express();
 app.use(express.json());
@@ -26,9 +25,6 @@ app.use(morgan(`dev`));
 
 // routes 연결
 app.use(`/api/v1/photo_sns/user`, user);
-
-// auth가 필요한 routes 연결
-app.use(auth);
 app.use(`/api/v1/photo_sns/posting`, posting);
 
 const PORT = process.env.PORT || 5700;
