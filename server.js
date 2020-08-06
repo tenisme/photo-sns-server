@@ -25,11 +25,11 @@ app.use(express.static(path.join(__dirname, `public`)));
 app.use(morgan(`dev`));
 
 // routes 연결
-app.use(`/api/v1/user`, user);
+app.use(`/api/v1/photo_sns/user`, user);
 
 // auth가 필요한 routes 연결
 app.use(auth);
-app.use(`/api/v1/posting`, posting);
+app.use(`/api/v1/photo_sns/posting`, posting);
 
 const PORT = process.env.PORT || 5700;
 

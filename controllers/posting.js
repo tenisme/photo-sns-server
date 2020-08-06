@@ -3,7 +3,7 @@ const path = require(`path`);
 const connection = require("../db/mysql_connection");
 
 // @desc    포스팅 생성
-// @route   POST /api/v1/posting
+// @route   POST /api/v1/photo_sns/posting
 // @req     user_id(auth), public_on, photo, comments, tags[]
 // @res     success, posting_id, message
 exports.uploadPosting = async (req, res, next) => {
@@ -199,7 +199,7 @@ exports.uploadPosting = async (req, res, next) => {
 };
 
 // @desc    포스팅 조회 - 최신 글부터 25개
-// @route   GET /api/v1/posting
+// @route   GET /api/v1/photo_sns/posting
 // @req     user_id(auth), offset, limit
 // @res     success, cnt, items : [{posting_id, public_on, photo_url, comments, tag : []}]
 exports.getPostings = async (req, res, next) => {
@@ -285,7 +285,7 @@ exports.getPostings = async (req, res, next) => {
 };
 
 // @desc    포스팅 수정
-// @route   PUT /api/v1/posting
+// @route   PUT /api/v1/photo_sns/posting
 // @req     user_id(auth), posting_id, public_on, photo, comments, tags[]
 // @res     success, message
 exports.updatePosting = async (req, res, next) => {

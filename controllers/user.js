@@ -8,7 +8,7 @@ const connection = require("../db/mysql_connection.js");
 const sendEmail = require("../utils/sendemail.js");
 
 // @desc    회원 가입 api
-// @route   POST /api/v1/photo_sns
+// @route   POST /api/v1/photo_sns/user
 // @req     loginId, email, passwd, device_id
 // @res     success, message, token
 exports.joinOnUser = async (req, res, next) => {
@@ -145,7 +145,7 @@ exports.joinOnUser = async (req, res, next) => {
 };
 
 // @desc    로그인 api
-// @route   POST /api/v1/photo_sns/login
+// @route   POST /api/v1/photo_sns/user/login
 // @req     id_or_email, passwd, device_id
 // @res     success, message, token
 exports.login = async (req, res, next) => {
@@ -230,7 +230,7 @@ exports.login = async (req, res, next) => {
 };
 
 // @desc    현재 기기 로그아웃 api
-// @route   DELETE /api/v1/photo_sns
+// @route   DELETE /api/v1/photo_sns/user
 // @req     user_id(auth), token(auth)
 // @res     success, message
 exports.logout = async (req, res, next) => {
