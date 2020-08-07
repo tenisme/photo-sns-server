@@ -53,8 +53,6 @@ exports.joinOnUser = async (req, res, next) => {
     return;
   }
 
-  device_id = Number(device_id);
-
   // 트랜잭션 처리
   const conn = await connection.getConnection();
   await conn.beginTransaction();
