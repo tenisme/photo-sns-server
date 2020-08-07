@@ -11,9 +11,6 @@ const user = require(`./routes/user.js`);
 const posting = require(`./routes/posting.js`);
 const relation = require(`./routes/relation.js`);
 
-// middleware 파일
-const auth = require(`./middleware/auth.js`);
-
 const app = express();
 app.use(express.json());
 
@@ -27,13 +24,11 @@ app.use(morgan(`dev`));
 
 // routes 연결
 app.use(`/api/v1/photo_sns/user`, user);
-
-app.use(auth);
 app.use(`/api/v1/photo_sns/posting`, posting);
 app.use(`/api/v1/photo_sns/relation`, relation);
 
 const PORT = process.env.PORT || 5700;
 
 app.listen(PORT, () => {
-  console.log(`App Listening on port ${PORT}`);
+  console.log(`서버 가동`);
 });
