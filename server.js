@@ -5,7 +5,7 @@ dotenv.config({ path: `./config/config.env` });
 const morgan = require(`morgan`);
 const fileupload = require(`express-fileupload`);
 const path = require(`path`);
-
+//
 // routes 파일
 const user = require(`./routes/user.js`);
 const posting = require(`./routes/posting.js`);
