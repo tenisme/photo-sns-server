@@ -31,7 +31,7 @@
     "nodemailer": "^6.4.11",
     "path": "^0.12.7",
     "postman-request": "^2.88.1-postman.23",
-    "validator": "^13.1.1"
+    "validator": "^13.7.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.4"
